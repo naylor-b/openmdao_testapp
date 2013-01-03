@@ -5,7 +5,8 @@ Functions that interact with the testing database.
 import os
 import sqlite3
 import zlib
-import web, datetime
+import web
+import datetime
 from web.utils import Storage
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))

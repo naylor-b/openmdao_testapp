@@ -8,16 +8,11 @@ import os
 import sys
 import shutil
 import json
-import pprint
-import StringIO
 import subprocess
 import socket
 import tarfile
-import fnmatch
 import tempfile
-import time
 import re
-import atexit
 from threading import Thread
 from Queue import Queue
 import ConfigParser
@@ -66,7 +61,7 @@ def fixmulti(txt):
     """adds unescaped html line breaks"""
     try:
         txt = zlib.decompress(txt)
-    except Exception as err:
+    except Exception:
         pass
     txt = str(txt)
     txt = web.net.htmlquote(txt)
