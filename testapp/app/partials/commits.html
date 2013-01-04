@@ -1,0 +1,20 @@
+
+<table class="table table-striped table-condensed table-bordered">
+    <title>Test Results by Commit</title>
+    <thead>
+        <tr>
+          <th>Commit</th>
+          <th>Date</th>
+          <th>Hosts Passed</th>
+          <th>Hosts Failed</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="test in commit_tests" class={{outcome(test)}}>
+      <td><a href="#/{{test.commit}}">{{test.commit}}</a></td>
+      <td>{{test.date}}</td>
+      <td>{{test.passed}}</td>
+      <td>{{test.failed}}</td>
+    </tr>
+    </tbody>
+</table>
