@@ -232,6 +232,9 @@ def do_tests(q):
             retval = test_commit(payload)
         except (Exception, SystemExit) as err:
             log(str(err))
+        else:
+            if retval != 0:
+                log('Nonzero return value for commit "%s"' % payload['after'])
 
 def send_mail(commit_id, retval, msg, sender=FROM_EMAIL, 
               dest_emails=RESULTS_EMAILS):
@@ -251,8 +254,6 @@ def get_commit_dir(commit_id):
 
 def test_commit(payload):
     """Run the test suite on the commit specified in payload."""
-    
-    startdir = os.getcwd()
     
     repo = payload['repository']['url']
     commit_id = payload['after']
@@ -398,11 +399,11 @@ def start_server():
 
     urls = (
         TOP, 'Index',
-        TOP+'run', 'Run',
-        TOP+'view/(\w+)/(\w+)', 'View',
-        TOP+'viewdocs/(\w+)', 'ViewDocs',
-        TOP+'hosts/(\w+)', 'Hosts',
-        TOP+'delete/(\w+)', 'Delete',
+        # TOP+'run', 'Run',
+        # TOP+'view/(\w+)/(\w+)', 'View',
+        # TOP+'viewdocs/(\w+)', 'ViewDocs',
+        # TOP+'hosts/(\w+)', 'Hosts',
+        # TOP+'delete/(\w+)', 'Delete',
     )
     
     sys.argv.append(PORT)
