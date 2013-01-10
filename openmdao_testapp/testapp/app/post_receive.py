@@ -18,17 +18,29 @@ from Queue import Queue
 import ConfigParser
 import zlib
 
-import web
+import signal
+import time
+import sqlite3
 
-import model
+from argparse import ArgumentParser
 
+# tornado
+from tornado import httpserver, web, escape, ioloop
+from tornado.web import RequestHandler, StaticFileHandler
+
+# openmdao
 from openmdao.util.git import download_github_tar
 from openmdao.devtools.utils import settings, put, run, cd
 
-APP_DIR = model.APP_DIR
+import model
+
+debug = True
+
+CFG_DIR = os.path.abspath(os.path.dirname(__file__))
+APP_DIR = CFG_DIR
 
 config = ConfigParser.ConfigParser()
-config.readfp(open(os.path.join(APP_DIR, 'testing.cfg'), 'r'))
+config.readfp(open(os.path.join(CFG_DIR, 'testing.cfg'), 'r'))
 
 TOP = config.get('openmdao_testing', 'top')
 PORT = config.get('openmdao_testing', 'port')
@@ -61,28 +73,40 @@ def fixmulti(txt):
     """adds unescaped html line breaks"""
     try:
         txt = zlib.decompress(txt)
-    except Exception:
-        pass
-    txt = str(txt)
-    txt = web.net.htmlquote(txt)
+    except Exception as err:
+        txt = str(err)
+    txt = escape.xhtml_escape(str(txt))
     return txt.replace('\n', '<br/>')
     
-    
-### Templates
-t_globals = {
-    'fixmulti': fixmulti
-    }
+def ensure_dir(d):
+    ''' Create directory if it doesn't exist.
+    '''
+    if not os.path.isdir(d):
+        os.makedirs(d)
 
-render = web.template.render(os.path.join(APP_DIR,'templates'), 
-                             base='base', globals=t_globals)
+# ### Templates
+# t_globals = {
+#     'fixmulti': fixmulti
+#     }
+
+# render = web.template.render(os.path.join(APP_DIR,'templates'), 
+#                              base='base', globals=t_globals)
 
 class Index:
 
     def GET(self):
         """ Show commit index """
-        return render.index(model.get_commits())
+        with open(os.path.join(APP_DIR, 'testapp', 'app', 'index.html')) as f:
+            return f.read()
 
-    
+class Commits:
+
+    def GET(self):
+        """Show a list of commit results."""
+        tests = model.get_commits()
+        web.header('Content-Type', 'application/json')
+        return json.dumps(tests)
+
 class Hosts:
 
     def GET(self, commit_id):
@@ -386,35 +410,201 @@ def process_results(commit_id, returncode, results_dir, output):
 
     send_mail(commit_id, returncode, output+docout+msg)
 
-        
+
+# def start_server():    
+#     sys.stderr = sys.stdout
     
-def start_server():    
-    sys.stderr = sys.stdout
+#     tester = Thread(target=do_tests, name='tester', args=(commit_queue,))
+#     tester.daemon = True
+#     tester.start()
     
-    tester = Thread(target=do_tests, name='tester', args=(commit_queue,))
-    tester.daemon = True
-    tester.start()
+#     ### Url mappings
+
+#     urls = (
+#         TOP, 'Index',
+#         # TOP+'run', 'Run',
+#         TOP+'commits', 'Commits',
+#         TOP+'view/(\w+)/(\w+)', 'View',
+#         # TOP+'viewdocs/(\w+)', 'ViewDocs',
+#         TOP+'hosts/(\w+)', 'Hosts',
+#         # TOP+'delete/(\w+)', 'Delete',
+#     )
     
-    ### Url mappings
+#     sys.argv.append(PORT)
 
-    urls = (
-        TOP, 'Index',
-        # TOP+'run', 'Run',
-        # TOP+'view/(\w+)/(\w+)', 'View',
-        # TOP+'viewdocs/(\w+)', 'ViewDocs',
-        # TOP+'hosts/(\w+)', 'Hosts',
-        # TOP+'delete/(\w+)', 'Delete',
-    )
+#     web.config.debug = False
     
-    sys.argv.append(PORT)
-
-    web.config.debug = False
-    
-    app = web.application(urls, globals())
-    app.run()
+#     app = web.application(urls, globals())
+#     app.run()
 
 
-if __name__ == "__main__":
-    start_server()
+# if __name__ == "__main__":
+#     start_server()
 
 
+
+# ---------------------------------------------------------------------------
+
+
+
+def DEBUG(msg):
+    if debug:
+        print '<<<' + str(os.getpid()) + '>>> OMG --', msg
+
+def get_user_dir():
+    return os.path.expanduser("~")
+
+# class ReqHandler(RequestHandler):
+#     ''' override the get_current_user() method in request handlers to
+#         determine the current user based on the value of a cookie.
+#     '''
+
+#     def initialize(self):
+#         pass
+#         #self.session = TornadoSession(self.application.session_manager, self)
+
+#     # def get_sessionid(self):
+#     #     return self.session.session_id
+
+#     def get_current_user(self):
+#         return self.get_secure_cookie('user')
+
+#     # def get_server(self):
+#     #     return self.application.server_manager.server(self.get_sessionid())
+
+#     # def delete_server(self):
+#     #     self.application.server_manager.delete_server(self.get_sessionid())
+
+class MainHandler(RequestHandler):
+
+    def get(self):
+        self.render('index.html')
+
+
+class CommitsHandler(RequestHandler):
+    ''' Get the test information for all commits.
+    '''
+
+    def get(self):
+        commits = model.get_commits()
+        self.content_type = 'application/javascript'
+        self.write(json.dumps(commits))
+
+
+class CommitHandler(RequestHandler):
+    ''' Get the test information for a commit.
+    '''
+
+    def get(self, commit):
+        commit = model.get_commit(commit)
+        self.content_type = 'application/javascript'
+        self.write(json.dumps(commit))
+
+
+class App(web.Application):
+    ''' Openmdao testing web application.
+        Extends tornado web app with URL mappings, settings and server manager.
+    '''
+
+    def __init__(self, secret=None):
+
+        handlers = [
+            web.url(r'/', MainHandler),
+            web.url(r'/js/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'js')}),
+            web.url(r'/lib/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'lib')}),
+            web.url(r'/css/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'css')}),
+            web.url(r'/img/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'img')}),
+            web.url(r'/partials/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'partials')}),
+            web.url(r'/commit/(.*)', CommitHandler),
+            web.url(r'/commits', CommitsHandler),
+            #web.url(r'/test/(.*)/(.*)', TestHandler)
+        ]
+
+        if secret is None:
+            secret = os.urandom(1024)
+
+        app_settings = {
+            #'login_url':         '/login',
+            'static_path':       APP_DIR,
+            'template_path':     os.path.join(APP_DIR, 'partials'),
+            #'cookie_secret':     secret,
+            'debug':             True,
+        }
+
+        # session_dir = os.path.join(get_user_dir(), 'openmdao_test_sessions')
+        # ensure_dir(session_dir)
+
+        # self.session_manager = TornadoSessionManager(secret, session_dir)
+
+        super(App, self).__init__(handlers, **app_settings)
+
+    def exit(self):
+        self.server_manager.cleanup()
+        DEBUG('Exit requested, shutting down....\n')
+        ioloop.instance().add_callback(sys.exit)
+
+
+class AppServer(object):
+    ''' Openmdao test web application server.
+        Wraps tornado web app, runs http server, and opens browser.
+    '''
+
+    def __init__(self, options):
+        self.options = options
+
+        # save secret between restarts
+        secret_file = os.path.join(get_user_dir(), 'openmdao_test_secret')
+        if os.path.exists(secret_file):
+            secret = open(secret_file, 'rb').read()
+        else:
+            secret = os.urandom(1024)
+            open(secret_file, 'wb').write(secret)
+        self.app = App(secret)
+
+    def serve(self):
+        ''' Start server listening on port, launch browser if requested,
+            and start the ioloop.
+        '''
+        self.http_server = httpserver.HTTPServer(self.app)
+        self.http_server.listen(self.options.port)
+
+        DEBUG('Serving on port %d' % self.options.port)
+        try:
+            ioloop.IOLoop.instance().start()
+        except KeyboardInterrupt:
+            DEBUG('interrupt received, shutting down.')
+
+    @staticmethod
+    def get_argument_parser():
+        ''' create a parser for command line arguments
+        '''
+        parser = ArgumentParser(description='launch the test server')
+        parser.add_argument('-p', '--port', type=int, dest='port', default=8000,
+                            help='port to run server on')
+        return parser
+
+
+def get_argument_parser():
+    ''' Shortcut to AppServer argument parser.
+    '''
+    return AppServer.get_argument_parser()
+
+
+def run(parser=None, options=None, args=None):
+    ''' Launch the GUI with specified options.
+    '''
+    # create the server and kick it off
+    server = AppServer(options)
+    server.serve()
+
+
+def main():
+    ''' Process command line arguments and run.
+    '''
+    parser = AppServer.get_argument_parser()
+    options, args = parser.parse_known_args()
+    run(parser, options, args)
+
+
+if __name__ == '__main__':
+    main()
