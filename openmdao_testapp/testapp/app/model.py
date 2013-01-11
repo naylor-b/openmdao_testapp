@@ -103,10 +103,10 @@ def get_commit(commit_id):
 
 def get_test(host, commit_id):
     try:
-        test = db.query('SELECT id,commit_id,host,passes,fails,skips,elapsed_time,platform,doc_results,date from tests WHERE commit_id=%s and host=%s')[0]
+        test = db.query("SELECT commit_id,doc_results,results from tests WHERE commit_id='%s' and host='%s'" % (commit_id, host))[0]
     except IndexError:
         return None
-    return test_to_dct(test)
+    return dict(commit_id=test[0], doc_results=test[1], results=test[2])
 
 def new_test(commit_id, results, host, 
              passes=0, fails=0, skips=0, elapsed_time='unknown'):

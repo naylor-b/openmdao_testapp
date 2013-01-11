@@ -4,12 +4,12 @@
 
 
 function CommitsCtrl($scope, $http) {
-    $http.get('/commits').
+    $http.get('/tests').
         success(function(data, status, headers, config) {
             $scope.commit_tests = data;
         }).
         error(function(data, status, headers, config) {
-            console.log("ERROR while getting /commits");
+            console.log("ERROR while getting /tests");
         });
 
     /*
@@ -17,7 +17,7 @@ function CommitsCtrl($scope, $http) {
         skipped tests.
     */
     $scope.outcome = function(test) {
-        if (test.fails > 0) {
+        if (test.fails > 0 || test.passes == 0) {
             return "error";
         }
         return "success";
@@ -33,11 +33,11 @@ function CommitCtrl($scope, $http, $routeParams) {
             $scope.host_tests = data;
         }).
         error(function(data, status, headers, config) {
-            console.log("ERROR while getting /commit/"+$routeParams.commit_id);
+            console.log("ERROR while getting /hosts/"+$routeParams.commit_id);
         });
 
     $scope.outcome = function(test) {
-        if (test.fails > 0) {
+        if (test.fails > 0 || test.passes == 0) {
             return "error";
         }
         else if (test.skips > 0) {
@@ -47,3 +47,17 @@ function CommitCtrl($scope, $http, $routeParams) {
     };
 }
 CommitCtrl.$inject = ['$scope', '$http', '$routeParams'];
+
+
+function TestCtrl($scope, $http, $routeParams) {
+    console.log('getting test results');
+    $http.get('/test/'+$routeParams.host+'/'+$routeParams.commit_id).
+        success(function(data, status, headers, config) {
+            $scope.test = data;
+        }).
+        error(function(data, status, headers, config) {
+            console.log("ERROR while getting '/test/'"+$routeParams.host+"/"+$routeParams.commit_id);
+        });
+
+}
+TestCtrl.$inject = ['$scope', '$http', '$routeParams'];

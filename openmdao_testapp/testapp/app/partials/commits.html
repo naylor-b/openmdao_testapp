@@ -11,7 +11,7 @@
     </thead>
     <tbody>
     <tr ng-repeat="test in commit_tests" class={{outcome(test)}}>
-      <td><a href="/commit/{{test.commit_id}}">{{test.commit_id}}</a></td>
+      <td><a href="/#/commit/{{test.commit_id}}">{{test.commit_id}}</a></td>
       <td>{{test.date}}</td>
       <td>{{test.passes}}</td>
       <td>{{test.fails}}</td>

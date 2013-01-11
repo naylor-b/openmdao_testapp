@@ -7,6 +7,7 @@ angular.module('myApp', ['myApp.filters', 'myApp.services', 'myApp.directives'])
     $routeProvider.when('/', {templateUrl: 'partials/commits.html', controller: CommitsCtrl});
     $routeProvider.when('/commits', {templateUrl: 'partials/commits.html', controller: CommitsCtrl});
     $routeProvider.when('/commit/:commit_id', {templateUrl: 'partials/commit.html', controller: CommitCtrl});
+    $routeProvider.when('/test/:host/:commit_id', {templateUrl: 'partials/test.html', controller: TestCtrl});
     $routeProvider.otherwise({redirectTo: '/commits'});
   }]);
 

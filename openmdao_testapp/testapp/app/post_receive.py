@@ -501,6 +501,16 @@ class CommitHandler(RequestHandler):
         self.write(json.dumps(commit))
 
 
+class TestHandler(RequestHandler):
+    ''' Get the test information for a commit.
+    '''
+
+    def get(self, host, commit):
+        test = model.get_test(host, commit)
+        self.content_type = 'application/javascript'
+        self.write(json.dumps(test))
+
+
 class App(web.Application):
     ''' Openmdao testing web application.
         Extends tornado web app with URL mappings, settings and server manager.
@@ -515,9 +525,9 @@ class App(web.Application):
             web.url(r'/css/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'css')}),
             web.url(r'/img/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'img')}),
             web.url(r'/partials/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'partials')}),
-            web.url(r'/commit/(.*)', CommitHandler),
-            web.url(r'/commits', CommitsHandler),
-            #web.url(r'/test/(.*)/(.*)', TestHandler)
+            web.url(r'/hosts/(.*)', CommitHandler),
+            web.url(r'/tests', CommitsHandler),
+            web.url(r'/test/(.*)/(.*)', TestHandler)
         ]
 
         if secret is None:
