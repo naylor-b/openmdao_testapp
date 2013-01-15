@@ -104,7 +104,8 @@ def get_commit(commit_id):
 def get_test(host, commit_id):
     try:
         test = db.query("SELECT commit_id,doc_results,results from tests WHERE commit_id='%s' and host='%s'" % (commit_id, host))[0]
-    except IndexError:
+    except IndexError as err:
+        print str(err)
         return None
     return dict(commit_id=test[0], doc_results=test[1], results=test[2])
 
@@ -118,7 +119,8 @@ def new_test(commit_id, results, host,
 def get_docbuild(commit_id):
     try:
         result = db.query('SELECT * from docbuilds WHERE commit_id=%s' % commit_id)[0]
-    except IndexError:
+    except IndexError as err:
+        print str(err)
         return None
     return dict(commit_id=result[0], results=result[1])
 

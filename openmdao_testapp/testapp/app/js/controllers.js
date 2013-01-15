@@ -27,7 +27,6 @@ CommitsCtrl.$inject = ['$scope', '$http'];
 
 
 function CommitCtrl($scope, $http, $routeParams) {
-    console.log('getting hosts');
     $http.get('/hosts/'+$routeParams.commit_id).
         success(function(data, status, headers, config) {
             $scope.host_tests = data;
@@ -46,12 +45,11 @@ function CommitCtrl($scope, $http, $routeParams) {
         return "success";
     };
 }
-CommitCtrl.$inject = ['$scope', '$http', '$routeParams'];
+CommitCtrl.$inject = ['$scope', '$http', '$routeParams', '$location'];
 
 
 function TestCtrl($scope, $http, $routeParams) {
-    console.log('getting test results');
-    $http.get('/test/'+$routeParams.host+'/'+$routeParams.commit_id).
+    $http.get('/results/'+$routeParams.host+'/'+$routeParams.commit_id).
         success(function(data, status, headers, config) {
             $scope.test = data;
         }).
@@ -61,3 +59,5 @@ function TestCtrl($scope, $http, $routeParams) {
 
 }
 TestCtrl.$inject = ['$scope', '$http', '$routeParams'];
+
+

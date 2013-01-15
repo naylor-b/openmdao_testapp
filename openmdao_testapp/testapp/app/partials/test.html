@@ -1,2 +1,9 @@
-<h2>Test Results for Commit {{test.commit_id}}</h2>
+<h3>Test Results for Commit 
+	<a href="https://github.com/OpenMDAO/OpenMDAO-Framework/commit/{{test.commit_id}}">{{test.commit_id}}
+	</a>
+</h3>
+<span>
+<textarea readonly style="width:100%" rows=30>
 {{test.results}}
+</textarea>
+<a class=btn href='#/'>Home</a>

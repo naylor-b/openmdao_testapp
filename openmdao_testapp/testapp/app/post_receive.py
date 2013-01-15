@@ -69,92 +69,6 @@ directory_map = {}
 
 commit_queue = Queue()
 
-def fixmulti(txt):
-    """adds unescaped html line breaks"""
-    try:
-        txt = zlib.decompress(txt)
-    except Exception as err:
-        txt = str(err)
-    txt = escape.xhtml_escape(str(txt))
-    return txt.replace('\n', '<br/>')
-    
-def ensure_dir(d):
-    ''' Create directory if it doesn't exist.
-    '''
-    if not os.path.isdir(d):
-        os.makedirs(d)
-
-# ### Templates
-# t_globals = {
-#     'fixmulti': fixmulti
-#     }
-
-# render = web.template.render(os.path.join(APP_DIR,'templates'), 
-#                              base='base', globals=t_globals)
-
-class Index:
-
-    def GET(self):
-        """ Show commit index """
-        with open(os.path.join(APP_DIR, 'testapp', 'app', 'index.html')) as f:
-            return f.read()
-
-class Commits:
-
-    def GET(self):
-        """Show a list of commit results."""
-        tests = model.get_commits()
-        web.header('Content-Type', 'application/json')
-        return json.dumps(tests)
-
-class Hosts:
-
-    def GET(self, commit_id):
-        """ Show hosts for a given test """
-        tests = model.get_host_tests(commit_id)
-        if tests is None:
-            return 'commit %s not found' % commit_id
-        else:
-            return render.hosts(tests, commit_id, 
-                                os.path.join(REPO_URL,'commit',commit_id),
-                                os.path.join(APP_URL,'viewdocs',commit_id))
-
-class View:
-
-    def GET(self, host, commit_id):
-        """ View results for a single commit on a host"""
-        test = model.get_test(host, commit_id)
-        if test is None:
-            return 'commit %s not found' % commit_id
-        else:
-            return render.view(test,
-                               os.path.join(REPO_URL,'commit',commit_id))
-
-class ViewDocs:
-
-    def GET(self, commit_id):
-        """ View doc build results for a single commit on a host"""
-        bld = model.get_docbuild(commit_id)
-        if bld is None:
-            return "Docs are not available yet"
-        else:
-            return render.viewdocs(bld)
-
-class Delete:
-
-    def POST(self, commit_id):
-        """ Delete all results for a commit """
-        model.delete_test(commit_id)
-        raise web.seeother('/p_r')
-
-class Run:
-
-    def POST(self):
-        """ Run tests for a commit """
-        data = web.input('payload')
-        payload = json.loads(data.payload)
-        commit_queue.put(payload)
-
 
 ########################################################################
 
@@ -411,69 +325,12 @@ def process_results(commit_id, returncode, results_dir, output):
     send_mail(commit_id, returncode, output+docout+msg)
 
 
-# def start_server():    
-#     sys.stderr = sys.stdout
-    
-#     tester = Thread(target=do_tests, name='tester', args=(commit_queue,))
-#     tester.daemon = True
-#     tester.start()
-    
-#     ### Url mappings
-
-#     urls = (
-#         TOP, 'Index',
-#         # TOP+'run', 'Run',
-#         TOP+'commits', 'Commits',
-#         TOP+'view/(\w+)/(\w+)', 'View',
-#         # TOP+'viewdocs/(\w+)', 'ViewDocs',
-#         TOP+'hosts/(\w+)', 'Hosts',
-#         # TOP+'delete/(\w+)', 'Delete',
-#     )
-    
-#     sys.argv.append(PORT)
-
-#     web.config.debug = False
-    
-#     app = web.application(urls, globals())
-#     app.run()
-
-
-# if __name__ == "__main__":
-#     start_server()
-
-
-
-# ---------------------------------------------------------------------------
-
-
-
 def DEBUG(msg):
     if debug:
         print '<<<' + str(os.getpid()) + '>>> OMG --', msg
 
 def get_user_dir():
     return os.path.expanduser("~")
-
-# class ReqHandler(RequestHandler):
-#     ''' override the get_current_user() method in request handlers to
-#         determine the current user based on the value of a cookie.
-#     '''
-
-#     def initialize(self):
-#         pass
-#         #self.session = TornadoSession(self.application.session_manager, self)
-
-#     # def get_sessionid(self):
-#     #     return self.session.session_id
-
-#     def get_current_user(self):
-#         return self.get_secure_cookie('user')
-
-#     # def get_server(self):
-#     #     return self.application.server_manager.server(self.get_sessionid())
-
-#     # def delete_server(self):
-#     #     self.application.server_manager.delete_server(self.get_sessionid())
 
 class MainHandler(RequestHandler):
 
@@ -487,7 +344,7 @@ class CommitsHandler(RequestHandler):
 
     def get(self):
         commits = model.get_commits()
-        self.content_type = 'application/javascript'
+        self.content_type = 'application/json'
         self.write(json.dumps(commits))
 
 
@@ -497,7 +354,7 @@ class CommitHandler(RequestHandler):
 
     def get(self, commit):
         commit = model.get_commit(commit)
-        self.content_type = 'application/javascript'
+        self.content_type = 'application/json'
         self.write(json.dumps(commit))
 
 
@@ -507,7 +364,8 @@ class TestHandler(RequestHandler):
 
     def get(self, host, commit):
         test = model.get_test(host, commit)
-        self.content_type = 'application/javascript'
+        test['results'] = zlib.decompress(test['results'])
+        self.content_type = 'application/json'
         self.write(json.dumps(test))
 
 
@@ -527,7 +385,7 @@ class App(web.Application):
             web.url(r'/partials/(.*)', web.StaticFileHandler, {'path': os.path.join(APP_DIR,'partials')}),
             web.url(r'/hosts/(.*)', CommitHandler),
             web.url(r'/tests', CommitsHandler),
-            web.url(r'/test/(.*)/(.*)', TestHandler)
+            web.url(r'/results/(.*)/(.*)', TestHandler)
         ]
 
         if secret is None:
