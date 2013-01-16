@@ -11,13 +11,10 @@ CFG_DIR = os.path.abspath(os.path.dirname(__file__))
 
 class DBWrapper(object):
     def __init__(self, path):
-        print 'connecting...'
         self._connection = sqlite3.connect(path)
-        print 'connection established'
-        print 'connection = ',str(self._connection)
 
     def query(self, sql):
-        print 'query = ',sql
+        #print 'query = ',sql
         reply = []
         cur = self._connection.cursor()
         cur.execute(sql)
@@ -26,21 +23,12 @@ class DBWrapper(object):
         return reply
 
     def insert(self, table, **kwargs):
-        print 'inserting into table %s' % table
         cur = self._connection.cursor()
         sql = 'insert into %s%s values (%s)' % (table, 
                                                 tuple(kwargs.keys()), 
                                                 ','.join(['?']*len(kwargs)))
         cur.execute(sql, tuple(kwargs.values()))
 
-
-# class Storage(object):
-#     def __init__(self, **kwargs):
-#         for k,v in kwargs.items():
-#             setattr(self, k, v)
-
-# db = web.database(dbn='sqlite', 
-#                   db=os.path.join(CFG_DIR,'testdb'))
 
 db = DBWrapper(os.path.join(CFG_DIR, 'testdb'))
             
@@ -54,20 +42,6 @@ def test_to_dct(tup):
                    platform=tup[6],
                    doc_results=tup[7],
                    date=tup[8])
-    
-# CREATE TABLE tests (
-#    id INTEGER PRIMARY KEY,
-#    commit_id TEXT,
-#    host TEXT,
-#    passes INTEGER,
-#    fails INTEGER,
-#    skips INTEGER,
-#    elapsed_time TEXT,
-#    platform TEXT,
-#    results BLOB,
-#    doc_results TEXT,
-#    date TEXT
-# );
 
 def get_commits():
     print 'in get_commits'
@@ -107,7 +81,6 @@ def get_commits():
 
 
 def get_commit(commit_id):
-    print 'in get_commit'
     try:
         tests = db.query("SELECT commit_id,host,passes,fails,skips,elapsed_time,platform,doc_results,date from tests where commit_id='%s'" % commit_id)
         return [test_to_dct(test) for test in tests]

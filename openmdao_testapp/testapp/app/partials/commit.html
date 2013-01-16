@@ -16,7 +16,7 @@
     <tr ng-repeat="test in host_tests" class={{outcome(test)}}>
       <td><a href="/#/test/{{test.host}}/{{test.commit_id}}">{{test.host}}</a></td>
       <td>{{test.passes}}</td>
-      <td>{{test.fails}}</td>
+      <td {{test.fails}}</td>
       <td>{{test.skips}}</td>
       <td>{{test.passes+test.fails+test.skips}}</td>
       <td>{{test.elapsed_time}}</td>
