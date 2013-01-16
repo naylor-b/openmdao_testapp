@@ -73,8 +73,8 @@ def get_commits():
     print 'in get_commits'
     commits = []
     commitdict = {}
-    tests = db.query('SELECT commit_id, date, fails, passes from tests order by date DESC')
-    for commit_id, tdate, fails, passes in tests:
+    tests = db.query('SELECT commit_id, date, fails, passes, doc_results from tests order by date DESC')
+    for commit_id, tdate, fails, passes, doc_results in tests:
         if commit_id in commitdict:
             obj = commitdict[commit_id]
         else:
@@ -82,6 +82,21 @@ def get_commits():
                           commit_id=commit_id, date=tdate)
             commits.append(obj)
             commitdict[commit_id] = obj
+
+            dct = get_docbuild(commit_id)
+            if isinstance(dct['results'], basestring):
+                result = dct['results']
+            elif dct['results'] is not None:
+              try:
+                 result = zlib.decompress(dct['results'])
+              except:
+                 result = '?'
+            if 'success' in result:
+                obj['doc_results'] = 'YES'
+            elif result == '?':
+                obj['doc_results'] = result
+            else:
+                obj['doc_results'] = 'NO'
             
         if fails > 0 or passes == 0:
             obj['fails'] += 1
@@ -118,10 +133,10 @@ def new_test(commit_id, results, host,
     
 def get_docbuild(commit_id):
     try:
-        result = db.query('SELECT * from docbuilds WHERE commit_id=%s' % commit_id)[0]
+        result = db.query("SELECT * from docbuilds WHERE commit_id='%s'" % commit_id)[0]
     except IndexError as err:
         print str(err)
-        return None
+        result = [commit_id, str(err)]
     return dict(commit_id=result[0], results=result[1])
 
 

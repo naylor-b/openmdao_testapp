@@ -22,6 +22,18 @@ function CommitsCtrl($scope, $http) {
         }
         return "success";
     };
+
+    $scope.doc_icon = function(docs) {
+        if (docs === 'YES') {
+            return "icon-ok";
+        }
+        else if (docs === 'NO') {
+            return "icon-warning-sign";
+        }
+        else {
+            return "icon-question-sign";
+        }
+    }
 }
 CommitsCtrl.$inject = ['$scope', '$http'];
 
@@ -40,7 +52,7 @@ function CommitCtrl($scope, $http, $routeParams) {
             return "error";
         }
         else if (test.skips > 0) {
-            return "warning";
+            return "info";
         }
         return "success";
     };

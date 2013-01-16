@@ -7,6 +7,7 @@
           <th>Date</th>
           <th>Hosts Passed</th>
           <th>Hosts Failed</th>
+          <th>Docs</th>
         </tr>
     </thead>
     <tbody>
@@ -15,6 +16,7 @@
       <td>{{test.date}}</td>
       <td>{{test.passes}}</td>
       <td>{{test.fails}}</td>
+      <td><i class="{{doc_icon(test.doc_results)}}"</i></td>
     </tr>
     </tbody>
 </table>
