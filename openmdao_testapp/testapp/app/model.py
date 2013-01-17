@@ -44,7 +44,6 @@ def test_to_dct(tup):
                    date=tup[8])
 
 def get_commits():
-    print 'in get_commits'
     commits = []
     commitdict = {}
     tests = db.query('SELECT commit_id, date, fails, passes, doc_results from tests order by date DESC')
@@ -108,7 +107,6 @@ def get_docbuild(commit_id):
     try:
         result = db.query("SELECT * from docbuilds WHERE commit_id='%s'" % commit_id)[0]
     except IndexError as err:
-        print str(err)
         result = [commit_id, str(err)]
     return dict(commit_id=result[0], results=result[1])
 
