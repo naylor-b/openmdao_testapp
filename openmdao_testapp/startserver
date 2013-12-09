@@ -1,1 +1,2 @@
-python2.6 post_receive.py > server.log 2>&1 &
+echo " **** restarting test server **** " `date`
+python2.6 post_receive.py >> server.log 2>&1 &
